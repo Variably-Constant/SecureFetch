@@ -1,0 +1,5 @@
+/target
+# What a local Hugo build of the wiki leaves behind.
+/wiki/.hugo_build.lock
+/wiki/public/
+/wiki/resources/

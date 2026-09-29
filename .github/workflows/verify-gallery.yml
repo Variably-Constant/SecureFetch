@@ -1,0 +1,58 @@
+# Installs SecureFetch from the PowerShell Gallery on Windows x64, Linux
+# x64 and macOS arm64 and runs the Pester suite against the installed
+# module: the package as a user gets it, with every platform's native
+# library in one folder. Started by hand after a publish, given the
+# version that was published. On Windows the suite runs in PowerShell 7
+# and in Windows PowerShell 5.1, both against the same installed folder.
+name: Verify the Gallery package
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: The version published, such as 0.1.0
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    env:
+      VERSION: ${{ inputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: SecureFetch from the Gallery, and Pester 6.2.0
+        shell: pwsh
+        run: |
+          Install-PSResource -Name SecureFetch -Version $env:VERSION -Repository PSGallery -TrustRepository -Scope CurrentUser
+          $module = Get-Module SecureFetch -ListAvailable | Where-Object { $_.Version -eq [version]$env:VERSION } | Select-Object -First 1
+          if (-not $module) { throw "SecureFetch $env:VERSION did not install" }
+          'INSTALLED ' + $module.ModuleBase
+          Get-ChildItem (Join-Path $module.ModuleBase 'runtimes') -Recurse -File | ForEach-Object { 'FILE ' + $_.FullName.Substring($module.ModuleBase.Length + 1) + ' ' + $_.Length }
+          Add-Content -Path $env:GITHUB_ENV -Value ('PWRS_MODULE=' + $module.ModuleBase)
+          New-Item -ItemType Directory -Force target/pester | Out-Null
+          Save-Module -Name Pester -RequiredVersion 6.2.0 -Path target/pester -Force
+
+      - name: Pester in PowerShell 7 against the installed module
+        shell: pwsh
+        run: |
+          Import-Module ./target/pester/Pester/6.2.0/Pester.psd1
+          $result = Invoke-Pester -Path tests -PassThru
+          'pester host={0} passed={1} failed={2} skipped={3}' -f $PSVersionTable.PSVersion, $result.PassedCount, $result.FailedCount, $result.SkippedCount
+          exit $result.FailedCount
+
+      - name: Pester in Windows PowerShell against the installed module
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: |
+          Import-Module ./target/pester/Pester/6.2.0/Pester.psd1
+          $result = Invoke-Pester -Path tests -PassThru
+          'pester host={0} passed={1} failed={2} skipped={3}' -f $PSVersionTable.PSVersion, $result.PassedCount, $result.FailedCount, $result.SkippedCount
+          exit $result.FailedCount

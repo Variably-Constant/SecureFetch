@@ -1,0 +1,169 @@
+# Builds SecureFetch on every push and pull request, on Windows x64, Linux
+# x64 and macOS arm64: cargo build, clippy with warnings denied, then cargo
+# pwrs test --release, which runs the Rust unit tests, builds the module,
+# and runs tests/SecureFetch.Tests.ps1 in PowerShell 7, and on Windows in
+# Windows PowerShell 5.1 as well. The suite's online tests run here too,
+# from the runner, against the hosts its header comment names. The
+# cargo-pwrs step installs the version Cargo.toml pins PoWerRuSt to, since
+# the tool and the crate move together. Each job uploads the module folder
+# it built and tested as an artifact named SecureFetch-<runtime id>.
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    env:
+      CARGO_TERM_COLOR: never
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # aws-lc-sys assembles its x86-64 sources with NASM. The Chocolatey
+      # package, whose 3.2.0 is NASM 3.02, runs NASM's own installer,
+      # which puts it in Program Files\NASM without adding that folder to
+      # PATH.
+      - name: NASM 3.02
+        shell: pwsh
+        run: |
+          choco install nasm --version 3.2.0 --no-progress -y
+          $nasm = Join-Path $env:ProgramFiles 'NASM'
+          Add-Content -Path $env:GITHUB_PATH -Value $nasm
+          & (Join-Path $nasm 'nasm.exe') -v
+
+      - name: Toolchain, the runner's current stable
+        shell: pwsh
+        run: |
+          rustup show active-toolchain
+          rustc --version
+          cargo --version
+
+      - name: cargo-pwrs 0.3.0
+        shell: pwsh
+        run: cargo install cargo-pwrs --version 0.3.0 --locked
+
+      - name: Pester 6.2.0, saved where cargo pwrs test looks for it
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force target\pester | Out-Null
+          Save-Module -Name Pester -RequiredVersion 6.2.0 -Path target\pester -Force
+
+      - name: Build
+        shell: pwsh
+        run: cargo build --release
+
+      - name: Clippy
+        shell: pwsh
+        run: cargo clippy --release --all-targets -- -D warnings
+
+      - name: Unit tests, then Pester in both hosts
+        shell: pwsh
+        run: cargo pwrs test --release
+
+      - name: Upload the module folder
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: SecureFetch-win-x64
+          path: target/pwrs/SecureFetch
+          if-no-files-found: error
+
+  # Linux x64 on the runner's Ubuntu image, whose PowerShell 7 runs the
+  # suite. aws-lc-sys compiles its C and assembly with the image's own
+  # compiler; NASM is a Windows need alone.
+  linux:
+    runs-on: ubuntu-latest
+    env:
+      CARGO_TERM_COLOR: never
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Toolchain, the runner's current stable
+        shell: pwsh
+        run: |
+          rustup show active-toolchain
+          rustc --version
+          cargo --version
+          $PSVersionTable.PSVersion.ToString()
+
+      - name: cargo-pwrs 0.3.0
+        shell: pwsh
+        run: cargo install cargo-pwrs --version 0.3.0 --locked
+
+      - name: Pester 6.2.0, saved where cargo pwrs test looks for it
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force target/pester | Out-Null
+          Save-Module -Name Pester -RequiredVersion 6.2.0 -Path target/pester -Force
+
+      - name: Build
+        shell: pwsh
+        run: cargo build --release
+
+      - name: Clippy
+        shell: pwsh
+        run: cargo clippy --release --all-targets -- -D warnings
+
+      - name: Unit tests, then Pester in pwsh
+        shell: pwsh
+        run: cargo pwrs test --release
+
+      - name: Upload the module folder
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: SecureFetch-linux-x64
+          path: target/pwrs/SecureFetch
+          if-no-files-found: error
+
+  # macOS arm64, the one platform no machine of the project's own runs.
+  # aws-lc-sys compiles its C and assembly with the runner's clang; the
+  # x86-64 assembly NASM builds on Windows does not apply here. The
+  # Gallery package takes its osx-arm64 folder from this job's run of the
+  # release commit.
+  macos:
+    runs-on: macos-latest
+    env:
+      CARGO_TERM_COLOR: never
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Toolchain, the runner's current stable
+        shell: pwsh
+        run: |
+          rustup show active-toolchain
+          rustc --version
+          cargo --version
+          $PSVersionTable.PSVersion.ToString()
+
+      - name: cargo-pwrs 0.3.0
+        shell: pwsh
+        run: cargo install cargo-pwrs --version 0.3.0 --locked
+
+      - name: Pester 6.2.0, saved where cargo pwrs test looks for it
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force target/pester | Out-Null
+          Save-Module -Name Pester -RequiredVersion 6.2.0 -Path target/pester -Force
+
+      - name: Build
+        shell: pwsh
+        run: cargo build --release
+
+      - name: Clippy
+        shell: pwsh
+        run: cargo clippy --release --all-targets -- -D warnings
+
+      - name: Unit tests, then Pester in pwsh
+        shell: pwsh
+        run: cargo pwrs test --release
+
+      - name: Upload the module folder
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: SecureFetch-osx-arm64
+          path: target/pwrs/SecureFetch
+          if-no-files-found: error

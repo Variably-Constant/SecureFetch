@@ -1,0 +1,96 @@
+[package]
+name = "securefetch"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.98"
+# The module manifest takes Author from the first of `authors`,
+# Description from `description`, ProjectUri from `repository`, and
+# its tags from `keywords`. `cargo pwrs publish` refuses a module
+# that has not set its own authors and description.
+authors = ["Mark Newton"]
+description = """HTTPS requests from PowerShell over TLS 1.3 with the X25519MLKEM768 \
+post-quantum hybrid key exchange, from rustls inside the module. Invoke-SecureFetch writes a \
+SecureFetch.Response for each https:// address, with the protocol version, key exchange and \
+cipher suite its handshake agreed; -RequirePostQuantum refuses a server that cannot agree \
+X25519MLKEM768 before the request is sent. Certificates are verified against the bundled \
+Mozilla roots and, on Windows, the Windows store, or a choice of roots. It sends GET, HEAD, \
+POST, PUT, PATCH, DELETE and OPTIONS with headers and bodies, follows redirects to https:// \
+addresses only, downloads to a file, goes through HTTP proxies by CONNECT, decodes gzip, \
+deflate, br and zstd bodies, and keeps connections for the next request to the same host. \
+Invoke-WebRequest and every other module keep the host's own TLS stack. Bound directly to \
+Rust with PoWerRuSt (pwrs), Rust bindings for writing PowerShell binary modules in the spirit \
+of PyO3: the cmdlet is the library, not a wrapper over a command line. Windows x64, Linux x64 \
+(glibc 2.28 and newer), macOS arm64 and FreeBSD x64 in one module, on PowerShell 7.4 or later \
+and, on Windows, Windows PowerShell 5.1. Source and issues at \
+https://github.com/Variably-Constant/SecureFetch; the binding framework at \
+https://github.com/Variably-Constant/PWRS and https://crates.io/crates/PoWerRuSt."""
+keywords = ["powershell", "tls", "tls13", "post-quantum", "mlkem", "rustls", "https", "Windows", "Linux", "MacOS", "FreeBSD"]
+repository = "https://github.com/Variably-Constant/SecureFetch"
+
+# Everything else a module manifest carries, each under the manifest
+# key's own name in kebab case (CompanyName as company). A cargo
+# manifest has no field for any of them, and one left unset is written
+# nowhere, so the manifest carries no key it has no value for.
+[package.metadata.pwrs]
+license-uri = "https://github.com/Variably-Constant/SecureFetch/blob/main/LICENSE"
+company = "Variably Constant"
+copyright = "(c) 2026 Mark Newton"
+release-notes = "The first release: Invoke-SecureFetch. What is in it: https://github.com/Variably-Constant/SecureFetch/blob/main/CHANGELOG.md"
+icon-uri = "https://raw.githubusercontent.com/Variably-Constant/PWRS/main/assets/PWRS.png"
+# prerelease = "beta1"                     # a gallery hides it from a plain install
+# require-license-acceptance = true
+# external-module-dependencies = ["Pester"]
+# powershell-version = "7.2"               # default 5.1, what the shells target
+# compatible-ps-editions = ["Core"]        # default both, one shell each
+# powershell-host-name = "ConsoleHost"
+# powershell-host-version = "5.1"
+# dotnet-framework-version = "4.7.2"       # Windows PowerShell reads these two;
+# clr-version = "4.0"                      # PowerShell Core ignores them
+# processor-architecture = "Amd64"
+# help-info-uri = "https://example.invalid/securefetch/help"
+# default-command-prefix = "Xy"            # inserted into every exported name
+# required-modules = ["Storage"]
+# required-assemblies = ["System.Xml.dll"]
+# scripts-to-process = ["init.ps1"]
+# types-to-process = ["SecureFetch.Types.ps1xml"]
+# nested-modules = ["Extra.psm1"]
+# dsc-resources-to-export = ["YourResource"]
+# module-list = ["SecureFetch"]
+# file-list = ["readme.md"]
+
+# License files for linked crates whose package ships none, which the
+# notices quote under that crate. alloc-stdlib 0.3.0, which
+# brotli-decompressor links, packages no LICENSE; this is the LICENSE of
+# its repository, github.com/dropbox/rust-alloc-no-stdlib, at the tag
+# 0.3.0, the commit the crate's .cargo_vcs_info.json records.
+[package.metadata.pwrs.license-files]
+"alloc-stdlib@0.3.0" = "licenses/alloc-stdlib-0.3.0/LICENSE"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+# PoWerRuSt from crates.io, imported as pwrs: the release whose
+# cargo-pwrs writes the license notices into the module folder. Build
+# with the cargo-pwrs of the same version.
+pwrs = { package = "PoWerRuSt", version = "0.3.0" }
+rustls = "0.23.45"
+webpki-roots = "1.0.9"
+# gzip and deflate bodies decode through zlib-rs, which picks its AVX2
+# and CLMUL paths at run time on a baseline build.
+flate2 = { version = "1.1.10", default-features = false, features = ["zlib-rs"] }
+brotli-decompressor = "6.0.1"
+ruzstd = "0.9.0"
+encoding_rs = "0.8.42"
+
+# The Windows certificate store, read for -TrustedRoots Windows.
+[target.'cfg(windows)'.dependencies]
+schannel = "0.1.29"
+
+# Whole-program LTO and one codegen unit so pwrs inlines into the
+# cmdlet body. Keep panic = "unwind": pwrs catches panics at the
+# boundary and reports them as errors instead of aborting the host.
+[profile.release]
+lto = "fat"
+codegen-units = 1
+panic = "unwind"

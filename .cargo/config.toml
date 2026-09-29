@@ -1,0 +1,8 @@
+# Links the C runtime into securefetch.dll (-C target-feature=+crt-static),
+# so the module loads on a Windows machine without the Visual C++
+# Redistributable, which Windows itself does not ship. cargo pwrs build
+# runs cargo in the crate folder, so it reads this file. A RUSTFLAGS
+# variable, when set, replaces these flags entirely: add
+# -C target-feature=+crt-static to it to keep the runtime linked in.
+[target.'cfg(all(target_os = "windows", target_env = "msvc"))']
+rustflags = ["-C", "target-feature=+crt-static"]
