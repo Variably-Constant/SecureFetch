@@ -5,7 +5,7 @@ weight: 2
 
 Every failure is an error record whose id and category say what failed. Source: `src/lib.rs`; the ids are listed in the [Error Reference](Error-Reference.md).
 
-## Read the id
+## Read the error id
 
 The id is the first part of `FullyQualifiedErrorId`:
 
@@ -61,7 +61,7 @@ try {
 
 ```text
 SecureFetchTls,Pwrs.Modules.SecureFetch.InvokeSecureFetchCommand
-the TLS exchange with expired.badssl.com failed: invalid peer certificate: certificate expired: verification time 1790665212 (UNIX), but certificate is not valid after 1428883199 (361782013 seconds ago)
+the TLS exchange with expired.badssl.com failed: invalid peer certificate: certificate expired: verification time 1793727542 (UNIX), but certificate is not valid after 1428883199 (364844343 seconds ago)
 ```
 
 (Windows PowerShell ran it 19 seconds later, so its two times were 19 higher.)

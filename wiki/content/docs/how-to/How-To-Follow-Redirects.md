@@ -16,8 +16,8 @@ $moved | Format-List Uri, FinalUri, Redirects, StatusCode
 ```
 
 ```text
-https://github.com/PowerShell/PowerShell/releases/tag/v7.6.6
-https://github.com/PowerShell/PowerShell/releases/tag/v7.6.6
+https://github.com/PowerShell/PowerShell/releases/tag/v7.6.9
+https://github.com/PowerShell/PowerShell/releases/tag/v7.6.9
 
 Uri        : https://httpbin.org/redirect/2
 FinalUri   : https://httpbin.org/get
@@ -27,7 +27,7 @@ StatusCode : 200
 
 `Uri` stays the address given; `FinalUri` is the address the last request went to, written out whole; `Redirects` holds each address followed, in order. A relative Location resolves against the address that answered, as RFC 3986 resolves a reference. `Protocol`, `KeyExchange` and `CipherSuite` describe the last connection.
 
-## The limit, and what is refused
+## The redirect limit, and refused redirects
 
 `-MaximumRedirection` takes 0 to 50, and 5 when not given. One more redirect than it allows is `SecureFetchTooManyRedirects` (LimitsExceeded); 0 writes a redirect as the response it is. A redirect to an address that is not https:// is never followed: `SecureFetchRedirectNotHttps` (SecurityError). Each error record's `TargetObject` is the redirect response.
 
@@ -66,23 +66,27 @@ the response from httpbin.org redirected to https://user@example.com/, which can
 
 A 300, a 304, and a redirect without a Location are written as the responses they are.
 
-## What the next request carries
+## What the redirected request sends
 
-- A 303, and a 301 or 302 answering a POST, is followed with a GET (a HEAD stays a HEAD) without the body, its Content-Type, or the `-Headers` fields that describe content (Content-Type, Content-Encoding, Content-Language, Content-Location). A 307 or 308 keeps the method and the body. Here httpbin.org answered a POST with a 303 to postman-echo.com/get, which saw a GET with no body, and with a 307 to postman-echo.com/post, which echoed the body sent again:
+- A 303, and a 301 or 302 answering a POST, is followed with a GET (a HEAD stays a HEAD) without the body, its Content-Type, or the `-Headers` fields that describe content (Content-Type, Content-Encoding, Content-Language, Content-Location). A 307 or 308 keeps the method and the body. Here httpbin.org answered a POST with a 303 to its own `/anything`, which echoes what it receives and saw a GET with no body, and with a 307 to the same address, which saw the POST and its body again. httpbin.org redirects only to its own hosts and to example.com, example.net and example.org. Both hosts printed this:
 
   ```powershell
-  $seeOther = Invoke-SecureFetch 'https://httpbin.org/redirect-to?url=https://postman-echo.com/get&status_code=303' -Method POST -Body 'SecureFetch test'
+  $seeOther = Invoke-SecureFetch 'https://httpbin.org/redirect-to?url=https://httpbin.org/anything&status_code=303' -Method POST -Body 'SecureFetch test'
   $seeOther.FinalUri
-  ($seeOther.Content | ConvertFrom-Json).headers.PSObject.Properties.Name -contains 'content-length'
-  $temporary = Invoke-SecureFetch 'https://httpbin.org/redirect-to?url=https://postman-echo.com/post&status_code=307' -Method POST -Body 'SecureFetch test'
+  ($seeOther.Content | ConvertFrom-Json).method
+  ($seeOther.Content | ConvertFrom-Json).headers.PSObject.Properties.Name -contains 'Content-Length'
+  $temporary = Invoke-SecureFetch 'https://httpbin.org/redirect-to?url=https://httpbin.org/anything&status_code=307' -Method POST -Body 'SecureFetch test'
   $temporary.FinalUri
+  ($temporary.Content | ConvertFrom-Json).method
   ($temporary.Content | ConvertFrom-Json).data
   ```
 
   ```text
-  https://postman-echo.com/get
+  https://httpbin.org/anything
+  GET
   False
-  https://postman-echo.com/post
+  https://httpbin.org/anything
+  POST
   SecureFetch test
   ```
 

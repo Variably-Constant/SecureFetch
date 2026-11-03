@@ -1,6 +1,8 @@
 ---
-title: How To Pipe Addresses And Keep Connections
+title: How To Pipe Addresses And Reuse Connections
 weight: 5
+aliases:
+  - /docs/how-to/how-to-pipe-addresses-and-keep-connections/
 ---
 
 `-Uri` takes one address by position or many from the pipeline, and each is requested on its own, redirects included. Source: `src/lib.rs` (`process`, `take_idle`, `exchange`, `persistent`).
@@ -31,10 +33,10 @@ $uris = 1..5 | ForEach-Object { 'https://pq.cloudflareresearch.com/cdn-cgi/trace
 ```
 
 ```text
-without -KeepAlive: 428 ms
-with -KeepAlive:    148 ms
+without -KeepAlive: 801 ms
+with -KeepAlive:    267 ms
 ```
 
-(Windows PowerShell: 457 and 153 ms.)
+(Windows PowerShell: 834 and 304 ms.)
 
 Kept connections close when the invocation ends. When the server has closed a kept connection while it sat idle, a GET, HEAD, OPTIONS, PUT or DELETE is sent once more on a new connection. A POST or PATCH is not sent twice, since repeating it may not be safe, and fails as `SecureFetchConnection`: in an end-to-end run, a POST after postman-echo.com closed a kept connection, seen closed after 399 idle seconds, failed that way, and no new connection was opened, while a HEAD after lwn.net closed one, seen closed after 6 idle seconds, was answered on a new connection.

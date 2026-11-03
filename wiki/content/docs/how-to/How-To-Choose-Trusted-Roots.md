@@ -5,7 +5,7 @@ weight: 9
 
 rustls verifies every server certificate against a set of roots. By default the set is the Mozilla roots compiled into the module and, on Windows, the roots in the Windows certificate store; on a system without that store the default is the bundled roots alone, and naming `Windows` there is refused before any connection. `-TrustedRoots` chooses the sources and `-RootCertificate` adds roots of your own. Source: `src/lib.rs` (`trusted_roots`, `root_sources`, `windows_roots`, `client_config`).
 
-## The default, and each source alone
+## -TrustedRoots and its default
 
 `-TrustedRoots` takes Bundled, Windows and None:
 
@@ -68,7 +68,7 @@ $failed[0].Exception.Message
 ```text
 SecureFetchRootStore,Pwrs.Modules.SecureFetch.InvokeSecureFetchCommand
 SecurityError
-the -RootCertificate CN=Oversized example root (thumbprint B325565D4EDA325444C5791B9037CA4F2DEB59A9) cannot be used as a root: invalid peer certificate: BadEncoding
+the -RootCertificate CN=Oversized example root (thumbprint 9315F717517A530A55B7350947332B20D6ED522D) cannot be used as a root: invalid peer certificate: BadEncoding
 ```
 
 (The key is made anew each run, so Windows PowerShell's thumbprint was another one.)

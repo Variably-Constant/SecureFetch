@@ -5,10 +5,11 @@ weight: 1
 
 From installing the module to a first response, in PowerShell 7 or Windows PowerShell 5.1. Source: `src/lib.rs`, and the module manifest cargo-pwrs writes from `Cargo.toml`.
 
-## What it runs on
+## Requirements
 
 - Windows PowerShell 5.1, or PowerShell 7.4 or later. On an earlier PowerShell 7 the import stops with a message saying the module needs 7.4 or later.
-- Windows x64, Linux x64 with glibc 2.28 or newer, macOS on arm64 and FreeBSD x64: the module carries a native library for each. On any other platform the import fails with a message naming the library and the platform it looked for.
+- In Windows PowerShell 5.1, SecureFetch cannot share a session with a module built with PoWerRuSt 0.8.0 or earlier, such as Zstd 0.1.0. Whichever of the two is imported second fails to import. Update the other module to a release built with PoWerRuSt 1.0.0, such as Zstd 0.2.0, or use PowerShell 7, which imports them in either order.
+- Windows x64, Linux x64 with glibc 2.28 or newer, macOS on arm64 and FreeBSD x64: the module has a native library for each. On any other platform the import fails with a message naming the library and the platform it looked for.
 - Nothing else: the TLS stack, its Mozilla roots and the decoders are compiled into the module, and on Windows so is the C runtime, so no Visual C++ Redistributable is needed.
 
 ## Install
@@ -51,7 +52,7 @@ tls=TLSv1.3
 kex=X25519MLKEM768
 ```
 
-## What came back
+## Reading the response
 
 The object is a `SecureFetch.Response`. `Headers` is an ordered dictionary whose keys ignore case, each holding a string array:
 
@@ -70,9 +71,9 @@ Date, Content-Type, Transfer-Encoding, Connection, If-Modified-Since, Expires, A
 
 `Content` is the body as text and `ContentBytes` its bytes; the [SecureFetch.Response Reference](Response-Reference.md) lists every property with its type.
 
-## Help at the prompt
+## Built-in help
 
-The module carries the cmdlet's help, written from the same source as the [Invoke-SecureFetch Reference](Invoke-SecureFetch-Reference.md):
+The module includes the cmdlet's help, written from the same source as the [Invoke-SecureFetch Reference](Invoke-SecureFetch-Reference.md):
 
 ```powershell
 (Get-Help Invoke-SecureFetch).Synopsis
@@ -84,7 +85,9 @@ Sends a request to an https:// address with TLS from rustls inside the module an
 Keeps each connection open after its response and reuses it for the next request to the same host and port through the same proxy, whether a redirect or the next piped address. When the server has closed the kept connection, a GET, HEAD, OPTIONS, PUT or DELETE is sent once more on a new connection, and a POST or PATCH fails as SecureFetchConnection rather than being sent twice.
 ```
 
-## Next
+`Get-Help Invoke-SecureFetch -Online` opens that reference page in a browser.
+
+## Next steps
 
 - Send something other than a GET: [How To Send Methods, Headers And Bodies](How-To-Send-Methods-Headers-And-Bodies.md).
 - Handle what fails: [How To Handle Errors](How-To-Handle-Errors.md).

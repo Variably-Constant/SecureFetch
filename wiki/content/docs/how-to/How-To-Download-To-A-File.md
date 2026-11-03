@@ -20,7 +20,7 @@ That hash is the one `Invoke-WebRequest` gave for the same file.
 
 The path is resolved by PowerShell's own path resolution, as `Invoke-WebRequest` resolves it: a relative path against the current location, and a drive such as `TestDrive:\` to the folder it maps. It must resolve, be a file system path, be in a folder that exists, and not be a folder itself; anything else is `SecureFetchBadOutFile` (InvalidArgument) before any connection is made. A folder that exists but cannot be written to is found only when the temporary file is created, after the response has begun, as `SecureFetchWriteFailed`.
 
-## Nothing written, unless -PassThru
+## No output unless -PassThru
 
 With `-OutFile` nothing goes to the pipeline. `-PassThru` writes the response as well, its `Content` and `ContentBytes` empty since the body went to the file:
 
@@ -38,7 +38,7 @@ ContentBytes : {}
 9494
 ```
 
-## When the target is replaced
+## When the file is replaced
 
 The body goes to a temporary file in the target's folder, named after it with 16 random hexadecimal digits and `.securefetch-partial` added. Only once the whole body has arrived is the temporary file made durable and renamed over the target, which replaces a file already there. On a response cut short, a failure, a timeout or a stop, the temporary file is deleted and the target is left as it was; a failure to create, write or rename it is `SecureFetchWriteFailed` (WriteError). On Windows, a target another handle holds open without delete sharing cannot be renamed over, so it is `SecureFetchWriteFailed` and keeps its content; on Linux, FreeBSD and macOS the rename replaces it, and the open handle goes on reading the content it opened. The suite checks each: the first on Windows, the second on the others.
 

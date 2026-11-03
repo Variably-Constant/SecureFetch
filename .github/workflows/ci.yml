@@ -1,8 +1,8 @@
 # Builds SecureFetch on every push and pull request, on Windows x64, Linux
 # x64 and macOS arm64: cargo build, clippy with warnings denied, then cargo
 # pwrs test --release, which runs the Rust unit tests, builds the module,
-# and runs tests/SecureFetch.Tests.ps1 in PowerShell 7, and on Windows in
-# Windows PowerShell 5.1 as well. The suite's online tests run here too,
+# and runs tests/SecureFetch.Tests.ps1 on the Pester 6.2.0 it fetches in
+# PowerShell 7, and on Windows in Windows PowerShell 5.1 as well. The suite's online tests run here too,
 # from the runner, against the hosts its header comment names. The
 # cargo-pwrs step installs the version Cargo.toml pins PoWerRuSt to, since
 # the tool and the crate move together. Each job uploads the module folder
@@ -43,15 +43,9 @@ jobs:
           rustc --version
           cargo --version
 
-      - name: cargo-pwrs 0.3.0
+      - name: cargo-pwrs 1.0.0
         shell: pwsh
-        run: cargo install cargo-pwrs --version 0.3.0 --locked
-
-      - name: Pester 6.2.0, saved where cargo pwrs test looks for it
-        shell: pwsh
-        run: |
-          New-Item -ItemType Directory -Force target\pester | Out-Null
-          Save-Module -Name Pester -RequiredVersion 6.2.0 -Path target\pester -Force
+        run: cargo install cargo-pwrs --version 1.0.0 --locked
 
       - name: Build
         shell: pwsh
@@ -90,15 +84,9 @@ jobs:
           cargo --version
           $PSVersionTable.PSVersion.ToString()
 
-      - name: cargo-pwrs 0.3.0
+      - name: cargo-pwrs 1.0.0
         shell: pwsh
-        run: cargo install cargo-pwrs --version 0.3.0 --locked
-
-      - name: Pester 6.2.0, saved where cargo pwrs test looks for it
-        shell: pwsh
-        run: |
-          New-Item -ItemType Directory -Force target/pester | Out-Null
-          Save-Module -Name Pester -RequiredVersion 6.2.0 -Path target/pester -Force
+        run: cargo install cargo-pwrs --version 1.0.0 --locked
 
       - name: Build
         shell: pwsh
@@ -139,15 +127,9 @@ jobs:
           cargo --version
           $PSVersionTable.PSVersion.ToString()
 
-      - name: cargo-pwrs 0.3.0
+      - name: cargo-pwrs 1.0.0
         shell: pwsh
-        run: cargo install cargo-pwrs --version 0.3.0 --locked
-
-      - name: Pester 6.2.0, saved where cargo pwrs test looks for it
-        shell: pwsh
-        run: |
-          New-Item -ItemType Directory -Force target/pester | Out-Null
-          Save-Module -Name Pester -RequiredVersion 6.2.0 -Path target/pester -Force
+        run: cargo install cargo-pwrs --version 1.0.0 --locked
 
       - name: Build
         shell: pwsh

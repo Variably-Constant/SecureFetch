@@ -1,6 +1,6 @@
 [package]
 name = "securefetch"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2024"
 rust-version = "1.98"
 # The module manifest takes Author from the first of `authors`,
@@ -8,20 +8,17 @@ rust-version = "1.98"
 # its tags from `keywords`. `cargo pwrs publish` refuses a module
 # that has not set its own authors and description.
 authors = ["Mark Newton"]
-description = """HTTPS requests from PowerShell over TLS 1.3 with the X25519MLKEM768 \
-post-quantum hybrid key exchange, from rustls inside the module. Invoke-SecureFetch writes a \
-SecureFetch.Response for each https:// address, with the protocol version, key exchange and \
-cipher suite its handshake agreed; -RequirePostQuantum refuses a server that cannot agree \
-X25519MLKEM768 before the request is sent. Certificates are verified against the bundled \
-Mozilla roots and, on Windows, the Windows store, or a choice of roots. It sends GET, HEAD, \
-POST, PUT, PATCH, DELETE and OPTIONS with headers and bodies, follows redirects to https:// \
-addresses only, downloads to a file, goes through HTTP proxies by CONNECT, decodes gzip, \
-deflate, br and zstd bodies, and keeps connections for the next request to the same host. \
-Invoke-WebRequest and every other module keep the host's own TLS stack. Bound directly to \
-Rust with PoWerRuSt (pwrs), Rust bindings for writing PowerShell binary modules in the spirit \
-of PyO3: the cmdlet is the library, not a wrapper over a command line. Windows x64, Linux x64 \
-(glibc 2.28 and newer), macOS arm64 and FreeBSD x64 in one module, on PowerShell 7.4 or later \
-and, on Windows, Windows PowerShell 5.1. Source and issues at \
+description = """Post-quantum HTTPS for PowerShell: TLS 1.3 with the X25519MLKEM768 hybrid \
+key exchange, from rustls inside the module. On Windows, neither PowerShell nor .NET offers \
+it by default: both get TLS from SChannel, whose ML-KEM support is Insider Preview only and \
+off by default, so Invoke-WebRequest negotiates classical X25519. Invoke-SecureFetch reports \
+each handshake's protocol, key exchange and cipher suite, refuses with -RequirePostQuantum \
+any server that cannot agree X25519MLKEM768, and handles methods, headers and bodies, \
+https-only redirects, downloads to a file, HTTP proxies, and gzip, deflate, br and zstd \
+bodies. Bound directly to Rust with PoWerRuSt (pwrs), Rust bindings for writing PowerShell \
+binary modules in the spirit of PyO3: the cmdlet is the library, not a wrapper over a \
+command line. Windows x64, Linux x64 (glibc 2.28+), macOS arm64 and FreeBSD x64, PowerShell \
+7.4+ and, on Windows, Windows PowerShell 5.1. Source and issues at \
 https://github.com/Variably-Constant/SecureFetch; the binding framework at \
 https://github.com/Variably-Constant/PWRS and https://crates.io/crates/PoWerRuSt."""
 keywords = ["powershell", "tls", "tls13", "post-quantum", "mlkem", "rustls", "https", "Windows", "Linux", "MacOS", "FreeBSD"]
@@ -35,7 +32,7 @@ repository = "https://github.com/Variably-Constant/SecureFetch"
 license-uri = "https://github.com/Variably-Constant/SecureFetch/blob/main/LICENSE"
 company = "Variably Constant"
 copyright = "(c) 2026 Mark Newton"
-release-notes = "The first release: Invoke-SecureFetch. What is in it: https://github.com/Variably-Constant/SecureFetch/blob/main/CHANGELOG.md"
+release-notes = "Built on PoWerRuSt 1.0.0: Get-Help -Online opens the cmdlet's wiki page, -ProxyCredential takes a user name and prompts for the password, and a stop wakes a waiting request at once. In Windows PowerShell 5.1 it cannot share a session with a module built with PoWerRuSt 0.8.0 or earlier, in either order; PowerShell 7 is unaffected. What changed: https://github.com/Variably-Constant/SecureFetch/blob/main/CHANGELOG.md"
 icon-uri = "https://raw.githubusercontent.com/Variably-Constant/PWRS/main/assets/PWRS.png"
 # prerelease = "beta1"                     # a gallery hides it from a plain install
 # require-license-acceptance = true
@@ -73,19 +70,19 @@ crate-type = ["cdylib"]
 # PoWerRuSt from crates.io, imported as pwrs: the release whose
 # cargo-pwrs writes the license notices into the module folder. Build
 # with the cargo-pwrs of the same version.
-pwrs = { package = "PoWerRuSt", version = "0.3.0" }
-rustls = "0.23.45"
-webpki-roots = "1.0.9"
+pwrs = { package = "PoWerRuSt", version = "1.0.0" }
+rustls = "0.23.46"
+webpki-roots = "1.0.11"
 # gzip and deflate bodies decode through zlib-rs, which picks its AVX2
 # and CLMUL paths at run time on a baseline build.
 flate2 = { version = "1.1.10", default-features = false, features = ["zlib-rs"] }
-brotli-decompressor = "6.0.1"
-ruzstd = "0.9.0"
-encoding_rs = "0.8.42"
+brotli-decompressor = "6.2.0"
+ruzstd = "0.9.1"
+encoding_rs = "0.8.44"
 
 # The Windows certificate store, read for -TrustedRoots Windows.
 [target.'cfg(windows)'.dependencies]
-schannel = "0.1.29"
+schannel = "0.1.30"
 
 # Whole-program LTO and one codegen unit so pwrs inlines into the
 # cmdlet body. Keep panic = "unwind": pwrs catches panics at the

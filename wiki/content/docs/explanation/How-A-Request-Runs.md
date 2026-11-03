@@ -11,7 +11,7 @@ One record through `Invoke-SecureFetch`, from the pipeline thread to the socket 
 
 ## On the worker thread
 
-Each request then runs on a worker thread of its own (`exchange`), while the pipeline thread waits for it in 50 ms steps, asking at each whether the pipeline is stopping. A stop marks the request stopped, shuts its connection down, and ends the phase at once with `SecureFetchStopped`; the worker is not waited for and ends when the step it is blocked in returns.
+Each request then runs on a worker thread of its own (`exchange`), while the pipeline thread waits for it, checking every 50 ms whether the worker has finished or the pipeline is stopping. Neither waits for that check: the worker wakes the pipeline thread when it finishes, and a stop wakes it through the stop waker the cmdlet registers with PoWerRuSt. A stop marks the request stopped, shuts its connection down, and ends the phase at once with `SecureFetchStopped`; the worker is not waited for and ends when the step it is blocked in returns.
 
 The worker:
 

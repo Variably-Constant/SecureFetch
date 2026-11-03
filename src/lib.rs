@@ -131,7 +131,7 @@ pub struct Response {
 /// Invoke-SecureFetch https://postman-echo.com/post -Method POST -Body '{"name":"value"}' -ContentType 'application/json' -Headers @{ 'X-Example' = '42' }
 /// (Invoke-SecureFetch https://github.com/PowerShell/PowerShell/releases/latest).FinalUri
 /// Invoke-SecureFetch https://speed.cloudflare.com/__down?bytes=1048576 -OutFile .\down.bin -PassThru
-#[cmdlet(verb = "Invoke", noun = "SecureFetch", output = ["SecureFetch.Response"])]
+#[cmdlet(verb = "Invoke", noun = "SecureFetch", output = ["SecureFetch.Response"], help_uri = "https://variably-constant.github.io/SecureFetch/docs/reference/invoke-securefetch-reference/")]
 pub struct InvokeSecureFetch {
     /// An https:// address.
     #[param(mandatory, position = 0, value_from_pipeline)]
@@ -178,8 +178,8 @@ pub struct InvokeSecureFetch {
     /// An HTTP proxy to reach the server through, as http://host:port. The request is tunneled with CONNECT, so TLS and its key exchange run between this module and the server. Without it, the proxy the system names for the address is used, unless -NoProxy is given.
     #[param]
     pub proxy: Option<String>,
-    /// The user name and password for the proxy, sent as Basic Proxy-Authorization.
-    #[param]
+    /// The user name and password for the proxy, sent as Basic Proxy-Authorization. A user name alone prompts for the password, as Get-Credential does.
+    #[param(credential)]
     pub proxy_credential: Option<PsCredential>,
     /// Connects to the server directly rather than through the proxy the system names for it.
     #[param]
@@ -331,10 +331,11 @@ impl InvokeSecureFetch {
     /// here, on the pipeline thread, which alone may write to the
     /// pipeline. A connection kept for the target is used first, and the
     /// connection comes back to the kept ones when the response leaves it
-    /// fit for another request. When the pipeline stops first, the request
-    /// is marked stopped, its connection is shut down, and the phase ends
-    /// at once with SecureFetchStopped; the worker ends on its own when the
-    /// step it is blocked in returns.
+    /// fit for another request. When the pipeline stops first, its stop
+    /// waker unparks this thread, the request is marked stopped, its
+    /// connection is shut down, and the phase ends at once with
+    /// SecureFetchStopped; the worker ends on its own when the step it is
+    /// blocked in returns.
     fn fetch(&mut self, ps: &Pipeline<'_>, target: &Target, outgoing: &Arc<Outgoing>, out_file: Option<&Path>) -> PsResult<Exchange> {
         let post_quantum_only = self.require_post_quantum;
         let proxy = self.proxy_for(ps, target)?;
@@ -362,6 +363,8 @@ impl InvokeSecureFetch {
             let cancel = Arc::clone(&cancel);
             start("securefetch-request", move || exchange(job, &cancel)).map_err(|e| no_thread(&host, &e))?
         };
+        let waiter = std::thread::current();
+        let _waker = ps.on_stop(move || waiter.unpark())?;
         let mut fetched = match wait_on(worker, || ps.stopping().then_some(Halt::Stopped)) {
             Ok(result) => result?,
             Err((_, worker)) => {
@@ -3716,9 +3719,10 @@ mod tests {
         };
         let stopping = AtomicBool::new(false);
         let scratch = std::cell::Cell::new(Vec::new());
+        let waker = pwrs::StopWakerSlot::new();
         // SAFETY: the fake host is installed and held above, and the token
         // is used only on this thread for this one phase.
-        let ps = unsafe { Pipeline::new(pwrs::sys::PsHandle::NULL, &stopping, &scratch) };
+        let ps = unsafe { Pipeline::new(pwrs::sys::PsHandle::NULL, &stopping, &scratch) }.with_stop_waker(&waker);
         let (result, returned, stopper) = std::thread::scope(|scope| {
             let stopper = scope.spawn(|| -> std::io::Result<(TcpStream, [u8; 5], Instant)> {
                 let (server_side, record) = take_client_hello(&listener)?;

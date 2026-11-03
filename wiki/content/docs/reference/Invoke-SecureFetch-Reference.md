@@ -3,7 +3,7 @@ title: Invoke-SecureFetch Reference
 weight: 1
 ---
 
-The module's one cmdlet. Source: `src/lib.rs` (`InvokeSecureFetch`, `impl Default for InvokeSecureFetch`, `impl Cmdlet for InvokeSecureFetch`).
+The module's one cmdlet. Source: `src/lib.rs` (`InvokeSecureFetch`, `impl Default for InvokeSecureFetch`, `impl Cmdlet for InvokeSecureFetch`). `Get-Help Invoke-SecureFetch -Online` opens this page.
 
 ## Syntax
 
@@ -64,7 +64,7 @@ RootCertificate     X509Certificate2[]
 | `-OutFile` | `string` | none | a file system path, relative to the current location | writes the body to that file as it arrives, through a temporary file that replaces it once the whole body has arrived; nothing is written to the pipeline |
 | `-PassThru` | switch | off | | with `-OutFile`, also writes the response, its `Content` and `ContentBytes` empty; without `-OutFile` the response is written anyway |
 | `-Proxy` | `string` | the system's proxy for each address | `http://host[:port]`, port 80 when not given | tunnels each request through that HTTP proxy with CONNECT. An https:// proxy, another scheme, user information, a path, no host, a port outside 1 to 65535, and `-Proxy` given with `-NoProxy` are refused before connecting |
-| `-ProxyCredential` | `PSCredential` | none | | the proxy's user name and password, sent as Basic Proxy-Authorization to whichever proxy is used |
+| `-ProxyCredential` | `PSCredential` | none | a credential, or a user name alone, for which the host prompts for the password | the proxy's user name and password, sent as Basic Proxy-Authorization to whichever proxy is used |
 | `-NoProxy` | switch | off | | connects directly rather than through the proxy the system names |
 | `-TrustedRoots` | `string[]` | Bundled, Windows on Windows; Bundled elsewhere | Bundled, Windows, None, in any case | where the roots a server's certificate must chain to come from: the bundled Mozilla roots, the Windows store, or neither; Windows on a system without a Windows certificate store is refused before any connection |
 | `-RootCertificate` | `X509Certificate2[]` | none | certificate objects | roots trusted beside whatever `-TrustedRoots` names |
@@ -85,4 +85,4 @@ Invoke-SecureFetch https://postman-echo.com/post -Method POST -Body '{"name":"va
 Invoke-SecureFetch https://speed.cloudflare.com/__down?bytes=1048576 -OutFile .\down.bin -PassThru
 ```
 
-The how-to pages run each family of parameters with its output: [methods, headers and bodies](How-To-Send-Methods-Headers-And-Bodies.md), [errors](How-To-Handle-Errors.md), [post-quantum TLS](How-To-Require-Post-Quantum-TLS.md), [timeouts and stopping](How-To-Bound-And-Stop-Requests.md), [the pipeline and kept connections](How-To-Pipe-Addresses-And-Keep-Connections.md), [redirects](How-To-Follow-Redirects.md), [files](How-To-Download-To-A-File.md), [proxies](How-To-Use-A-Proxy.md), [roots](How-To-Choose-Trusted-Roots.md), and [compressed and encoded bodies](How-To-Read-Compressed-And-Encoded-Bodies.md).
+The how-to pages run each family of parameters with its output: [methods, headers and bodies](How-To-Send-Methods-Headers-And-Bodies.md), [errors](How-To-Handle-Errors.md), [post-quantum TLS](How-To-Require-Post-Quantum-TLS.md), [timeouts and stopping](How-To-Set-Timeouts-And-Stop-Requests.md), [the pipeline and reused connections](How-To-Pipe-Addresses-And-Reuse-Connections.md), [redirects](How-To-Follow-Redirects.md), [files](How-To-Download-To-A-File.md), [proxies](How-To-Use-A-Proxy.md), [roots](How-To-Choose-Trusted-Roots.md), and [compressed and encoded bodies](How-To-Read-Compressed-And-Encoded-Bodies.md).

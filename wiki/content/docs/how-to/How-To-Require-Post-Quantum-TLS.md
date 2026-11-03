@@ -26,6 +26,6 @@ X25519MLKEM768
 - `SecureFetchNotPostQuantum` (SecurityError) covers every way a server turns the offer down: an alert saying it shares no group or version, rustls finding it chose TLS 1.2 or no shared group, a retry asking for a group that was not offered, or the connection closed mid-handshake, which some servers do instead of sending an alert. A wait that runs out is a timeout, not a refusal.
 - Every new connection makes a full handshake of its own (session resumption is off), so each response's `KeyExchange` is the group its own connection agreed.
 
-## Without the switch
+## Without -RequirePostQuantum
 
 Without `-RequirePostQuantum`, TLS 1.2 is accepted and the key exchange falls back to X25519, secp256r1 or secp384r1 when the server does not offer X25519MLKEM768. The response still says what was agreed, so a script can check `KeyExchange` itself.

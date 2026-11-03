@@ -25,7 +25,7 @@ text/plain; charset=utf-8
 - `-Body` takes a string, sent as UTF-8, or a byte array, sent as it is. It is always framed by `Content-Length`, with any method. A POST, PUT or PATCH without a body sends `Content-Length: 0`.
 - Without `-ContentType`, a string body goes with `text/plain; charset=utf-8` and a byte array with `application/octet-stream`; nothing is sent without a body.
 
-## A body of a given type
+## A body with a content type
 
 `-ContentType` is sent as given:
 
@@ -125,6 +125,6 @@ $head.ContentBytes.Length
 0
 ```
 
-## Sending again on a kept connection
+## Retrying on a reused connection
 
-Under `-KeepAlive`, when the server has closed a kept connection before answering, a GET, HEAD, OPTIONS, PUT or DELETE is sent once more on a new connection; a POST or PATCH is not sent twice and fails as `SecureFetchConnection`. See [How To Pipe Addresses And Keep Connections](How-To-Pipe-Addresses-And-Keep-Connections.md).
+Under `-KeepAlive`, when the server has closed a kept connection before answering, a GET, HEAD, OPTIONS, PUT or DELETE is sent once more on a new connection; a POST or PATCH is not sent twice and fails as `SecureFetchConnection`. See [How To Pipe Addresses And Reuse Connections](How-To-Pipe-Addresses-And-Reuse-Connections.md).

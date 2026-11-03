@@ -7,9 +7,9 @@ From a checkout of the repository to a module folder that imports in PowerShell 
 
 ## What the build needs
 
-- Windows x64, Linux x64, FreeBSD x64 or macOS arm64: the module has been built and its suite run on each, as [Where It Has Been Run](Where-It-Has-Been-Run.md) reports. Windows PowerShell 5.1 is on Windows alone; elsewhere the host is PowerShell 7.
+- Windows x64, Linux x64, FreeBSD x64 or macOS arm64: the module has been built and its suite run on each, as [Tested Platforms](Tested-Platforms.md) reports. Windows PowerShell 5.1 is on Windows alone; elsewhere the host is PowerShell 7.
 - Rust 1.98 or later: `Cargo.toml` names `rust-version = "1.98"` and edition 2024, so an older rustc refuses the crate.
-- [PoWerRuSt](https://crates.io/crates/PoWerRuSt) 0.3.0 from crates.io, which `Cargo.toml` names, and cargo-pwrs 0.3.0: `cargo install cargo-pwrs --version 0.3.0 --locked` installs the tool the runs on these pages used, and `cargo install cargo-pwrs` without a version takes the newest, which has to be the version `Cargo.toml` pins PoWerRuSt to, since the tool and the crate move together. PWRS's [Getting Started](https://variably-constant.github.io/PWRS/docs/tutorials/getting-started/) lists what cargo-pwrs needs beside Rust.
+- [PoWerRuSt](https://crates.io/crates/PoWerRuSt) 1.0.0 from crates.io, which `Cargo.toml` names, and cargo-pwrs 1.0.0: `cargo install cargo-pwrs --version 1.0.0 --locked` installs the tool the runs on these pages used, and `cargo install cargo-pwrs` without a version takes the newest, which has to be the version `Cargo.toml` pins PoWerRuSt to, since the tool and the crate move together. PWRS's [Getting Started](https://variably-constant.github.io/PWRS/docs/tutorials/getting-started/) lists what cargo-pwrs needs beside Rust.
 - A C compiler for aws-lc-sys, the C cryptography under rustls. On Windows that is the Visual Studio Build Tools (MSVC), with NASM on `PATH` for its x86-64 assembly; aws-lc-sys's [README](https://github.com/aws/aws-lc-rs/blob/main/aws-lc-sys/README.md) describes `AWS_LC_SYS_PREBUILT_NASM=1` for a machine without NASM, and the Windows builds these pages report used NASM. On Linux, FreeBSD and macOS it is the system's `cc`: gcc 14.2.1 in the Linux build these pages report and clang 19.1.7 on the FreeBSD machine. A Linux library asks for the glibc it was built against; the package's is built in a `quay.io/pypa/manylinux_2_28_x86_64` container (AlmaLinux 8, glibc 2.28), so it loads on glibc 2.28 and newer.
 
 ## Build
@@ -24,7 +24,7 @@ The module folder is `target\pwrs\SecureFetch`, under `CARGO_TARGET_DIR` when th
 
 `cargo pwrs test --release` runs the Rust unit tests, builds the module, and runs `tests/SecureFetch.Tests.ps1` in `pwsh` and, on Windows, in `powershell.exe`; see [How To Run The Tests](How-To-Run-The-Tests.md).
 
-## Import the folder
+## Import the built module
 
 ```powershell
 Import-Module .\target\pwrs\SecureFetch\SecureFetch.psd1

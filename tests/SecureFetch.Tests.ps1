@@ -14,7 +14,7 @@
 # and OPTIONS requests, header values, and synthetic bodies built from
 # "SecureFetch test" and a new GUID; httpbin.org is sent two of those
 # bodies, by the redirect tests that POST through its redirect-to endpoint
-# on their way to postman-echo.com. Every request to another public host
+# on their way to its own /anything. Every request to another public host
 # is a GET or a HEAD, and every other test stays on this machine. The tests that read the Windows certificate store, the one that
 # reads this process's connections through Get-NetTCPConnection, and the
 # one that needs Windows to refuse a rename over a file held open run on
@@ -116,11 +116,11 @@ Describe 'Invoke-SecureFetch' {
         $manifest.Author | Should -BeExactly 'Mark Newton'
         $manifest.CompanyName | Should -BeExactly 'Variably Constant'
         $manifest.Copyright | Should -BeExactly '(c) 2026 Mark Newton'
-        $manifest.Description | Should -BeExactly 'HTTPS requests from PowerShell over TLS 1.3 with the X25519MLKEM768 post-quantum hybrid key exchange, from rustls inside the module. Invoke-SecureFetch writes a SecureFetch.Response for each https:// address, with the protocol version, key exchange and cipher suite its handshake agreed; -RequirePostQuantum refuses a server that cannot agree X25519MLKEM768 before the request is sent. Certificates are verified against the bundled Mozilla roots and, on Windows, the Windows store, or a choice of roots. It sends GET, HEAD, POST, PUT, PATCH, DELETE and OPTIONS with headers and bodies, follows redirects to https:// addresses only, downloads to a file, goes through HTTP proxies by CONNECT, decodes gzip, deflate, br and zstd bodies, and keeps connections for the next request to the same host. Invoke-WebRequest and every other module keep the host''s own TLS stack. Bound directly to Rust with PoWerRuSt (pwrs), Rust bindings for writing PowerShell binary modules in the spirit of PyO3: the cmdlet is the library, not a wrapper over a command line. Windows x64, Linux x64 (glibc 2.28 and newer), macOS arm64 and FreeBSD x64 in one module, on PowerShell 7.4 or later and, on Windows, Windows PowerShell 5.1. Source and issues at https://github.com/Variably-Constant/SecureFetch; the binding framework at https://github.com/Variably-Constant/PWRS and https://crates.io/crates/PoWerRuSt.'
+        $manifest.Description | Should -BeExactly 'Post-quantum HTTPS for PowerShell: TLS 1.3 with the X25519MLKEM768 hybrid key exchange, from rustls inside the module. On Windows, neither PowerShell nor .NET offers it by default: both get TLS from SChannel, whose ML-KEM support is Insider Preview only and off by default, so Invoke-WebRequest negotiates classical X25519. Invoke-SecureFetch reports each handshake''s protocol, key exchange and cipher suite, refuses with -RequirePostQuantum any server that cannot agree X25519MLKEM768, and handles methods, headers and bodies, https-only redirects, downloads to a file, HTTP proxies, and gzip, deflate, br and zstd bodies. Bound directly to Rust with PoWerRuSt (pwrs), Rust bindings for writing PowerShell binary modules in the spirit of PyO3: the cmdlet is the library, not a wrapper over a command line. Windows x64, Linux x64 (glibc 2.28+), macOS arm64 and FreeBSD x64, PowerShell 7.4+ and, on Windows, Windows PowerShell 5.1. Source and issues at https://github.com/Variably-Constant/SecureFetch; the binding framework at https://github.com/Variably-Constant/PWRS and https://crates.io/crates/PoWerRuSt.'
         $manifest.PrivateData.PSData.ProjectUri | Should -Be 'https://github.com/Variably-Constant/SecureFetch'
         $manifest.PrivateData.PSData.LicenseUri | Should -Be 'https://github.com/Variably-Constant/SecureFetch/blob/main/LICENSE'
         $manifest.PrivateData.PSData.IconUri | Should -Be 'https://raw.githubusercontent.com/Variably-Constant/PWRS/main/assets/PWRS.png'
-        $manifest.PrivateData.PSData.ReleaseNotes | Should -BeExactly 'The first release: Invoke-SecureFetch. What is in it: https://github.com/Variably-Constant/SecureFetch/blob/main/CHANGELOG.md'
+        $manifest.PrivateData.PSData.ReleaseNotes | Should -BeExactly 'Built on PoWerRuSt 1.0.0: Get-Help -Online opens the cmdlet''s wiki page, -ProxyCredential takes a user name and prompts for the password, and a stop wakes a waiting request at once. In Windows PowerShell 5.1 it cannot share a session with a module built with PoWerRuSt 0.8.0 or earlier, in either order; PowerShell 7 is unaffected. What changed: https://github.com/Variably-Constant/SecureFetch/blob/main/CHANGELOG.md'
         foreach ($tag in 'powershell', 'tls', 'tls13', 'post-quantum', 'mlkem', 'rustls', 'https', 'Windows', 'Linux', 'MacOS', 'FreeBSD') {
             $manifest.PrivateData.PSData.Tags | Should -Contain $tag
         }
@@ -182,6 +182,24 @@ Describe 'Invoke-SecureFetch' {
         $parameters['Body'].ParameterType.FullName | Should -Be 'System.Object'
         $parameters['ContentType'].ParameterType.FullName | Should -Be 'System.String'
         { Invoke-SecureFetch 'https://127.0.0.1:1/' -Method TRACE -ErrorAction Stop } | Should -Throw
+    }
+
+    It 'names its wiki reference page for Get-Help -Online' {
+        (Get-Command Invoke-SecureFetch).HelpUri | Should -BeExactly 'https://variably-constant.github.io/SecureFetch/docs/reference/invoke-securefetch-reference/'
+    }
+
+    It 'takes a user name alone for -ProxyCredential, as Get-Credential -Credential does' {
+        $parameter = (Get-Command Invoke-SecureFetch).Parameters['ProxyCredential']
+        $parameter.ParameterType.FullName | Should -Be 'System.Management.Automation.PSCredential'
+        @($parameter.Attributes | Where-Object { $_ -is [System.Management.Automation.CredentialAttribute] }).Count | Should -Be 1
+    }
+
+    # Nothing listens on 127.0.0.1 port 1, so a request that reaches the
+    # connection fails as SecureFetchConnect: the $null was read as no
+    # credential rather than refused.
+    It 'takes -ProxyCredential $null as no -ProxyCredential' {
+        Invoke-SecureFetch 'https://127.0.0.1:1/' -NoProxy -ProxyCredential $null -TimeoutSeconds 5 -ErrorAction SilentlyContinue -ErrorVariable failed | Should -BeNullOrEmpty
+        $failed[0].FullyQualifiedErrorId | Should -BeLike 'SecureFetchConnect,*'
     }
 
     # Nothing listens on 127.0.0.1 port 1, so a request that got as far as
@@ -504,31 +522,38 @@ Describe 'Invoke-SecureFetch' {
             $failed[0].TargetObject.Headers['Location'] | Should -Be 'https://user@example.com/'
         }
 
+        # httpbin.org redirects only to its own hosts and example.com, .net
+        # and .org, so both redirects lead to its /anything, which echoes
+        # the method, header fields and body it received.
         It 'follows a 303 answering a POST with a GET that carries no body' {
-            if (-not ($echoOnline -and $binOnline)) {
-                Set-ItResult -Skipped -Because "$echo or $bin port 443 cannot be reached from here"
+            if (-not $binOnline) {
+                Set-ItResult -Skipped -Because "$bin port 443 cannot be reached from here"
                 return
             }
-            $r = Invoke-SecureFetch "https://$bin/redirect-to?url=https://$echo/get&status_code=303" -Method POST -Body "SecureFetch test $guid" -ErrorAction Stop
+            $r = Invoke-SecureFetch "https://$bin/redirect-to?url=https://$bin/anything&status_code=303" -Method POST -Body "SecureFetch test $guid" -ErrorAction Stop
             $r.StatusCode | Should -Be 200
-            $r.FinalUri | Should -Be "https://$echo/get"
-            $r.Redirects -join ' ' | Should -Be "https://$echo/get"
-            $echoed = ($r.Content | ConvertFrom-Json).headers.PSObject.Properties.Name
+            $r.FinalUri | Should -Be "https://$bin/anything"
+            $r.Redirects -join ' ' | Should -Be "https://$bin/anything"
+            $json = $r.Content | ConvertFrom-Json
+            $json.method | Should -BeExactly 'GET'
+            $json.data | Should -BeNullOrEmpty
+            $echoed = $json.headers.PSObject.Properties.Name
             $echoed | Should -Not -Contain 'content-length'
             $echoed | Should -Not -Contain 'content-type'
         }
 
         It 'follows a 307 answering a POST with the same POST and body' {
-            if (-not ($echoOnline -and $binOnline)) {
-                Set-ItResult -Skipped -Because "$echo or $bin port 443 cannot be reached from here"
+            if (-not $binOnline) {
+                Set-ItResult -Skipped -Because "$bin port 443 cannot be reached from here"
                 return
             }
             $body = "SecureFetch test $guid"
-            $r = Invoke-SecureFetch "https://$bin/redirect-to?url=https://$echo/post&status_code=307" -Method POST -Body $body -ErrorAction Stop
+            $r = Invoke-SecureFetch "https://$bin/redirect-to?url=https://$bin/anything&status_code=307" -Method POST -Body $body -ErrorAction Stop
             $r.StatusCode | Should -Be 200
-            $r.FinalUri | Should -Be "https://$echo/post"
-            $r.Redirects -join ' ' | Should -Be "https://$echo/post"
+            $r.FinalUri | Should -Be "https://$bin/anything"
+            $r.Redirects -join ' ' | Should -Be "https://$bin/anything"
             $json = $r.Content | ConvertFrom-Json
+            $json.method | Should -BeExactly 'POST'
             $json.data | Should -BeExactly $body
             $json.headers.'content-type' | Should -Be 'text/plain; charset=utf-8'
         }

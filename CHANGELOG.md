@@ -1,8 +1,73 @@
 # Changelog
 
-What changed in each version of SecureFetch. The repository ships as a
-single root commit that is rewritten on every release, so this file is
-the record of what came before it; the commit log is not.
+What changed in each version of SecureFetch. Each release is one commit
+in the repository's history, so the commit log names the versions and
+this file says what changed in each.
+
+## 0.2.0
+
+### Added
+
+- `Get-Help Invoke-SecureFetch -Online` opens the cmdlet's reference page
+  in the wiki, which it declares as its `HelpUri`.
+- `-ProxyCredential` takes a user name alone and prompts for the password
+  through the host, as `Get-Credential -Credential` does: the parameter
+  carries PowerShell's `[Credential()]`.
+
+### Changed
+
+- The module is built on PoWerRuSt 1.0.0 with cargo-pwrs 1.0.0, where
+  0.1.0 was built on 0.3.0. In a session that shows as follows:
+  - In Windows PowerShell 5.1 the module cannot share a session with a
+    module built with PoWerRuSt 0.8.0 or earlier, in either order.
+    SecureFetch 0.1.0 and Zstd 0.1.0 are two such modules. Imported after
+    Zstd 0.1.0, SecureFetch 0.2.0 fails with
+    `Could not load type 'Pwrs.RustJobSourceAdapter'`. When SecureFetch
+    0.2.0 comes first, Zstd 0.1.0 fails instead, with
+    `Method 'get_PwrsCmdletId' ... does not have an implementation`.
+    PowerShell 7 imports them in either order. SecureFetch 0.2.0 and
+    Zstd 0.2.0 import together in either order, in both hosts.
+  - A SecureFetch of the same version already loaded from another
+    folder, as when another module bundles it, makes a second import
+    stand down and keep the loaded copy's commands. One of another
+    version stops the import with `PwrsOtherVersionLoaded`.
+  - Outside Windows the module stages its files in `pwrs-load-<uid>` in
+    the temporary folder, a folder only its user can read, so every user
+    of a machine imports it.
+  - `-Debug` shows the verbose records and warnings, and asks after each
+    whether to continue, as a compiled cmdlet does.
+  - An exception that comes back through the cmdlet's output, such as a
+    later command's throw, ends the command with that exception, whatever
+    `-ErrorAction` says.
+  - `-OutFile $null`, `-Proxy $null`, `-ContentType $null` and
+    `-ProxyCredential $null` are each taken as the parameter not given.
+    0.1.0 ended `-ProxyCredential $null` with `PwrsRuntimeError`.
+  - The notices beside each native library give each crate's page on
+    crates.io: `Source: https://crates.io/crates/<name>/<version>`.
+- A stop wakes the wait for a request at once: the cmdlet registers a
+  stop waker with PoWerRuSt, where it noticed a stop at its next check,
+  up to 50 ms later.
+- rustls 0.23.46, with aws-lc-rs 1.19.0 and aws-lc-sys 0.47.0;
+  webpki-roots 1.0.11, the Mozilla roots the module bundles;
+  brotli-decompressor 6.2.0, ruzstd 0.9.1, encoding_rs 0.8.44 and
+  schannel 0.1.30.
+- `.github/workflows/ci.yml` installs cargo-pwrs 1.0.0 and no longer
+  saves Pester, since `cargo pwrs test` fetches Pester 6.2.0 into its
+  toolchain.
+- The Pester suite's two redirect tests that POST through httpbin.org's
+  redirect-to endpoint lead to httpbin.org's own `/anything`, since
+  httpbin.org redirects only to its own hosts and to example.com,
+  example.net and example.org.
+- Four wiki pages are renamed: Where It Has Been Run is now Tested
+  Platforms, Why A Module Of Its Own is Why SecureFetch, How To Bound And
+  Stop Requests is How To Set Timeouts And Stop Requests, and How To Pipe
+  Addresses And Keep Connections is How To Pipe Addresses And Reuse
+  Connections. Their old addresses redirect to the new ones.
+
+### Fixed
+
+- The cards on the wiki's section pages link to the lowercase paths Hugo
+  publishes, so none answers 404 on GitHub Pages.
 
 ## 0.1.0
 

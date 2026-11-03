@@ -27,6 +27,7 @@ the proxy http://127.0.0.1:3128 asks for credentials (407 Proxy Authentication R
 
 - `-Proxy` is an `http://host:port` address; the port is 80 when not given. An https:// proxy, another scheme, user information or a path in the address, no host, a port outside 1 to 65535, or `-Proxy` together with `-NoProxy`, is refused before any connection as `SecureFetchProxy` (InvalidArgument).
 - `-ProxyCredential` is sent as Basic `Proxy-Authorization`. A proxy that needs NTLM or Negotiate cannot be used.
+- `-ProxyCredential` also takes a user name alone, `-ProxyCredential alice`, and then prompts for the password through the host, as `Get-Credential -Credential` does. In PowerShell 7 a host that cannot prompt, such as `pwsh -NonInteractive`, refuses the parameter with `ParameterArgumentTransformationError` instead. Windows PowerShell 5.1 under `-NonInteractive` binds no credential, so the request goes without one, as it does for `-ProxyCredential $null`.
 - The proxy's host name is resolved on this machine; the server's name goes to the proxy in the CONNECT line, and the proxy resolves it.
 - A proxy that cannot be reached, answers CONNECT with anything but 2xx, or sends bytes after its 2xx answer is `SecureFetchProxy` (ConnectionError); a 407 is `SecureFetchProxy` (AuthenticationError).
 - Under `-KeepAlive` a kept connection is reused only through the same proxy; each redirect is its own CONNECT unless it is.
